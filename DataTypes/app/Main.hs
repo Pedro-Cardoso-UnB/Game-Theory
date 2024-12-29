@@ -1,5 +1,7 @@
 import DataTypes
-import Data.ByteString
+import Data.List
+-- import Data.Tree (flatten)
+-- import Data.ByteString
 
 -- randomProbability :: Int -> Probability
 -- randomProbability n = ((27*n + 128) `rem` (100))/100
@@ -38,7 +40,7 @@ outcomesDifficulty wi li = l/(l + w)
 
 -- Derives odifficulty from a list of values
 listOfOutcomesDifficulty :: [Value] -> Difficulty
-listOfOutcomesDifficulty vs = outcomesDifficulty (length (filter (== L) vs)) (length (filter (== W) vs))
+listOfOutcomesDifficulty vs = outcomesDifficulty (length (filter (== W) vs)) (length (filter (== L) vs))
 
 -- Flattens a game tree into an array of games with empty subgames
 flattenGame :: Game -> [Game]
@@ -87,18 +89,19 @@ indexOf n xs = go 0 n xs
 
 -- Results in the index of the smallest difficulty in a list
 leastDifficult :: [Difficulty] -> Int
-leastDifficult ds = indexOf (listMin ds) ds
+leastDifficult ds = justToIntOnly (elemIndex (listMin ds) ds)
 
 -- Returns a game's agency
 gameAgency :: Game -> Agency
-gameAgency (Node p v gs) = if gameDifficulty (gs!!leastDifficult (gamesToDifficulty gs)) < 0.5 then p else p*gameAgency (gs!!leastDifficult (gamesToDifficulty gs))
+gameAgency (Node p Nothing gs) = if gameDifficulty (Node p Nothing gs) < 0.5 then p else p*gameAgency (gs!!leastDifficult (gamesToDifficulty gs))
+gameAgency (Node p v gs) = p
 
 -- Example: Russian Roullette. Reason being, its easy to implement.
 
 russianRoullette :: Game
-russianRoullette = (Node 1 Nothing [(Node 0.166 L []), (Node 0.833 Nothing [(Node 0.2 L []), (Node 0.8 Nothing [(Node 0.25 L []), (Node 0.75 Nothing [(Node 0.33 L []), (Node 0.66 Nothing [(Node 0.5 L []), (Node 0.5 W [])])])])])])
+russianRoullette = Node 1 Nothing [Node (1.0/6.0) (Just L) [], Node (5.0/6.0) Nothing [Node (1.0/5.0) (Just L) [], Node (4.0/5.0) Nothing [Node (1.0/4.0) (Just L) [], Node (3.0/4.0) Nothing [Node (1.0/3.0) (Just L) [], Node (2.0/3.0) Nothing [Node (1.0/2.0) (Just L) [], Node (1.0/2.0) (Just W) []]]]]]
 
 main :: IO ()
-main = print (gameDifficulty russianRoullette)
+main = print (gameAgency russianRoullette)
 -- main = print (gameAgency (makeGame 2 2 2 2))
 -- main = print (makeGame 2 2 2 2)
